@@ -1,4 +1,4 @@
-import { Config, readConfig, setUser } from "./config";
+import { readConfig, setUser } from "./config";
 
 function main() {
   console.log("Hello, world!");
