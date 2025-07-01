@@ -1,24 +1,47 @@
 import { setUser } from "./config.js";
+import { createUser, getUserByName } from "./lib/db/queries/users.js";
 
-export type CommandHandler = (cmdName: string, ...args: string[]) => void;
+export type CommandHandler = (cmdName: string, ...args: string[]) => Promise<void>;
 export type CommandsRegistry = Record<string, CommandHandler>;
-
-export function handlerLogin(cmdName: string, ...args: string[]) {
-    if (args.length !== 1) {
-        throw new Error("wrong number of arguments. Usage: login <username>");
-    }
-    setUser(args[0]);
-    console.log(`User has been set to ${args[0]}`);
-}
 
 export function registerCommand(registry: CommandsRegistry, cmdName: string, handler: CommandHandler) {
     registry[cmdName] = handler;
 }
 
-export function runCommand(registry: CommandsRegistry, cmdName: string, ...args: string[]) {
+export async function runCommand(registry: CommandsRegistry, cmdName: string, ...args: string[]) {
     const handler = registry[cmdName];
     if (!handler) {
         throw new Error(`Unknown command ${cmdName}`);
     }
-    handler(cmdName, ...args);
+    try {
+        await handler(cmdName, ...args);
+    } catch (err) {
+        throw err;
+    }
+}
+
+export async function handlerLogin(cmdName: string, ...args: string[]) {
+    if (args.length !== 1) {
+        throw new Error("wrong number of arguments. Usage: login <username>");
+    }
+    const user = await getUserByName(args[0]);
+    if (!user) {
+        throw new Error("User doesn't exists");
+    }
+    setUser(user.name);
+    console.log(`User has been set to ${user.name}`);
+}
+
+export async function handlerRegister(cmdName:string, ...args: string[]) {
+    if (args.length !== 1) {
+        throw new Error("wrong number of arguments. Usage: register <username>");
+    }
+    const oldUser = await getUserByName(args[0]);
+    if (oldUser) {
+        throw new Error("User already exists");
+    }
+    const newUser = await createUser(args[0]);
+    setUser(newUser.name);
+    console.log(`User ${newUser.name} created successfully`);
+    console.log(newUser);
 }
