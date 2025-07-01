@@ -1,5 +1,8 @@
+import { url } from "inspector";
 import { readConfig, setUser } from "./config.js";
+import { createFeed } from "./lib/db/queries/feeds.js";
 import { createUser, deleteAllUsers, getUserByName, getUsers } from "./lib/db/queries/users.js";
+import { printFeed } from "./rss.js";
 
 export type CommandHandler = (cmdName: string, ...args: string[]) => Promise<void>;
 export type CommandsRegistry = Record<string, CommandHandler>;
@@ -32,7 +35,7 @@ export async function handlerLogin(cmdName: string, ...args: string[]) {
     console.log(`User has been set to ${user.name}`);
 }
 
-export async function handlerRegister(cmdName:string, ...args: string[]) {
+export async function handlerRegister(cmdName: string, ...args: string[]) {
     if (args.length !== 1) {
         throw new Error("wrong number of arguments. Usage: register <username>");
     }
@@ -46,14 +49,24 @@ export async function handlerRegister(cmdName:string, ...args: string[]) {
     console.log(newUser);
 }
 
-export async function handlerReset(cmdName:string) {
+export async function handlerReset(cmdName: string) {
     await deleteAllUsers();
 }
 
-export async function handlerGetUsers(cmdName:string) {
+export async function handlerGetUsers(cmdName: string) {
     const users = await getUsers();
     const currentUser = readConfig().currentUserName;
     for (let u of users) {
         console.log(`* ${u.name}${u.name === currentUser ? " (current)" : ""}`);
     }
+}
+
+export async function handlerAddFeed(cmdName: string, ...args: string[]) {
+    if (args.length !== 2) {
+        throw new Error("wrong number of arguments. Usage: addfeed <name> <url>");
+    }
+
+    const user = await getUserByName(readConfig().currentUserName);
+    const feed = await createFeed(args[0], args[1], user.id);
+    printFeed(feed, user);
 }
