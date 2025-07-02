@@ -1,8 +1,10 @@
 import { url } from "inspector";
 import { readConfig, setUser } from "./config.js";
-import { createFeed, getFeeds } from "./lib/db/queries/feeds.js";
+import { createFeed, createFeedFollow, getFeedFollowsForUser, getFeeds } from "./lib/db/queries/feeds.js";
 import { createUser, deleteAllUsers, getUserById, getUserByName, getUsers } from "./lib/db/queries/users.js";
 import { printFeed } from "./rss.js";
+import { read } from "fs";
+import { ConsoleLogWriter } from "drizzle-orm";
 
 export type CommandHandler = (cmdName: string, ...args: string[]) => Promise<void>;
 export type CommandsRegistry = Record<string, CommandHandler>;
@@ -67,7 +69,8 @@ export async function handlerAddFeed(cmdName: string, ...args: string[]) {
     }
     const user = await getUserByName(readConfig().currentUserName);
     const feed = await createFeed(args[0], args[1], user.id);
-    printFeed(feed, user);
+    const follow = await createFeedFollow(feed.url, user.name);
+    console.log(`User ${user.name} added new feed:\n\t${follow.feed_name}`);
 }
 
 export async function handlerFeeds(cmdName:string) {
@@ -75,5 +78,23 @@ export async function handlerFeeds(cmdName:string) {
     for (let feed of feeds) {
         const user = await getUserById(feed.user_id);
         console.log(`* ${feed.name}\n\t${feed.url}\n\tAdded by: ${user.name}`);
+    }
+}
+
+export async function handlerFollow(cmdName:string, ...args: string[]) {
+    if (args.length !== 1) {
+        throw new Error("wrong number of arguments. Usage: follow <url>");
+    }
+    const userName = readConfig().currentUserName;
+    const feedFollow = await createFeedFollow(args[0], userName);
+    console.log(`User ${userName} is now following:\n${feedFollow.feed_name}`);
+}
+
+export async function handlerGetFeedFollows(cmdName:string) {
+    const user = readConfig().currentUserName;
+    const follows = await getFeedFollowsForUser(user);
+    console.log(`User ${user} is currently following:`);
+    for (let f of follows) {
+        console.log(f.feed_name);
     }
 }

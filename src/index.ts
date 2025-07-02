@@ -1,5 +1,5 @@
 import { exit } from "process";
-import { type CommandsRegistry, handlerAddFeed, handlerFeeds, handlerGetUsers, handlerLogin, handlerRegister, handlerReset, registerCommand, runCommand } from "./commands.js";
+import { type CommandsRegistry, handlerAddFeed, handlerFeeds, handlerFollow, handlerGetFeedFollows, handlerGetUsers, handlerLogin, handlerRegister, handlerReset, registerCommand, runCommand } from "./commands.js";
 import { fetchFeedURL } from "./rss.js";
 
 
@@ -12,6 +12,8 @@ async function main() {
   registerCommand(cmds, "agg", fetchFeedURL);
   registerCommand(cmds, "addfeed", handlerAddFeed);
   registerCommand(cmds, "feeds", handlerFeeds)
+  registerCommand(cmds, "follow", handlerFollow);
+  registerCommand(cmds, "following", handlerGetFeedFollows);
   let args = process.argv.slice(2);
   const cmdName = args[0];
   args = args.slice(1);

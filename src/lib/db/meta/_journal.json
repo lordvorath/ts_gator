@@ -22,6 +22,13 @@
       "when": 1751374337194,
       "tag": "0002_real_newton_destine",
       "breakpoints": true
+    },
+    {
+      "idx": 3,
+      "version": "7",
+      "when": 1751445542996,
+      "tag": "0003_modern_echo",
+      "breakpoints": true
     }
   ]
 }
