@@ -2,7 +2,7 @@ import { readConfig } from "src/config";
 import { db } from "..";
 import { feed_follows, feeds, users } from "../schema";
 import { getUserById, getUserByName } from "./users";
-import { eq } from "drizzle-orm";
+import { eq, sql } from "drizzle-orm";
 
 export async function createFeed(name: string, url: string, user_id: string) {
     const [result] = await db.insert(feeds).values({ name: name, url: url, user_id:user_id}).returning();
@@ -54,4 +54,9 @@ export async function getFeedFollowsForUser(user_name:string) {
     .innerJoin(feeds, eq(feed_follows.feed_id, feeds.id))
     .innerJoin(users, eq(feed_follows.user_id, users.id));
     return results;
+}
+
+export async function deleteFeedFollow(url:string, user_id: string) {
+    const feed_id = (await getFeedByURL(url)).id;
+    await db.delete(feed_follows).where(sql`feed_follows.feed_id = ${feed_id} AND feed_follows.user_id = ${user_id}`);
 }

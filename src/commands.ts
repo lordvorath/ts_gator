@@ -1,6 +1,6 @@
 import { url } from "inspector";
 import { readConfig, setUser } from "./config.js";
-import { createFeed, createFeedFollow, getFeedFollowsForUser, getFeeds } from "./lib/db/queries/feeds.js";
+import { createFeed, createFeedFollow, deleteFeedFollow, getFeedFollowsForUser, getFeeds } from "./lib/db/queries/feeds.js";
 import { createUser, deleteAllUsers, getUserById, getUserByName, getUsers } from "./lib/db/queries/users.js";
 import { printFeed } from "./rss.js";
 import { read } from "fs";
@@ -107,8 +107,15 @@ export async function handlerFollow(cmdName: string, user: User, ...args: string
 
 export async function handlerGetFeedFollows(cmdName: string, user: User) {
     const follows = await getFeedFollowsForUser(user.name);
-    console.log(`User ${user} is currently following:`);
+    console.log(`User ${user.name} is currently following:`);
     for (let f of follows) {
         console.log(f.feed_name);
     }
+}
+
+export async function handlerUnfollow(cmdName: string, user: User, ...args: string[]) {
+    if (args.length !== 1) {
+        throw new Error("wrong number of arguments. Usage: unfollow <url>");
+    }
+    await deleteFeedFollow(args[0], user.id);
 }
