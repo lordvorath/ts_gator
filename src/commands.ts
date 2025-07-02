@@ -1,7 +1,7 @@
 import { url } from "inspector";
 import { readConfig, setUser } from "./config.js";
-import { createFeed } from "./lib/db/queries/feeds.js";
-import { createUser, deleteAllUsers, getUserByName, getUsers } from "./lib/db/queries/users.js";
+import { createFeed, getFeeds } from "./lib/db/queries/feeds.js";
+import { createUser, deleteAllUsers, getUserById, getUserByName, getUsers } from "./lib/db/queries/users.js";
 import { printFeed } from "./rss.js";
 
 export type CommandHandler = (cmdName: string, ...args: string[]) => Promise<void>;
@@ -65,8 +65,15 @@ export async function handlerAddFeed(cmdName: string, ...args: string[]) {
     if (args.length !== 2) {
         throw new Error("wrong number of arguments. Usage: addfeed <name> <url>");
     }
-
     const user = await getUserByName(readConfig().currentUserName);
     const feed = await createFeed(args[0], args[1], user.id);
     printFeed(feed, user);
+}
+
+export async function handlerFeeds(cmdName:string) {
+    const feeds = await getFeeds();
+    for (let feed of feeds) {
+        const user = await getUserById(feed.user_id);
+        console.log(`* ${feed.name}\n\t${feed.url}\n\tAdded by: ${user.name}`);
+    }
 }
