@@ -1,5 +1,5 @@
 import { exit } from "process";
-import { type CommandsRegistry, handlerAddFeed, handlerFeeds, handlerFollow, handlerGetFeedFollows, handlerGetUsers, handlerLogin, handlerRegister, handlerReset, handlerUnfollow, middleWareLoggedIn, registerCommand, runCommand } from "./commands.js";
+import { type CommandsRegistry, handlerAddFeed, handlerAggregate, handlerFeeds, handlerFollow, handlerGetFeedFollows, handlerGetUsers, handlerLogin, handlerRegister, handlerReset, handlerUnfollow, middleWareLoggedIn, registerCommand, runCommand } from "./commands.js";
 import { fetchFeedURL } from "./rss.js";
 
 
@@ -9,7 +9,7 @@ async function main() {
   registerCommand(cmds, "register", handlerRegister);
   registerCommand(cmds, "reset", handlerReset);
   registerCommand(cmds, "users", handlerGetUsers);
-  registerCommand(cmds, "agg", fetchFeedURL);
+  registerCommand(cmds, "agg", handlerAggregate);
   registerCommand(cmds, "addfeed", middleWareLoggedIn(handlerAddFeed));
   registerCommand(cmds, "feeds", handlerFeeds)
   registerCommand(cmds, "follow", middleWareLoggedIn(handlerFollow));

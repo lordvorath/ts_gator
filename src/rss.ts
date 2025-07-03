@@ -1,5 +1,6 @@
 import { XMLParser } from "fast-xml-parser";
 import { Feed, User } from "./lib/db/schema";
+import { getNextFeedToFetch, markFeedFetched } from "./lib/db/queries/feeds";
 
 type RSSFeed = {
     channel: {
@@ -18,7 +19,6 @@ type RSSItem = {
 };
 
 export async function fetchFeedURL(feedURL: string) {
-    feedURL = "https://www.wagslane.dev/index.xml";
     const res = await fetch(feedURL, {
         method: "GET",
         headers: {
@@ -34,15 +34,8 @@ export async function fetchFeedURL(feedURL: string) {
     }
     const { title, link, description } = channel;
     if (
-        !title || !link || !description ||
-        typeof title !== "string" ||
-        typeof link !== "string" ||
-        typeof description !== "string"
+        !title || !link || !description
     ) {
-        console.log("bad feed");
-        console.log(`${typeof title}`);
-        console.log(`${typeof link}`);
-        console.log(`${typeof description}`);
         throw new Error("Bad feed")
     }
     let items = channel.item;
@@ -51,7 +44,6 @@ export async function fetchFeedURL(feedURL: string) {
     }
     const blah: RSSItem[] = [];
     for (let i of items) {
-        const { title, link, description, pubDate } = i;
         blah.push(i)
     }
     const out = {
@@ -60,6 +52,7 @@ export async function fetchFeedURL(feedURL: string) {
         description: channel.description,
         items: blah,
     };
+    return out;
 }
 
 export function printFeed(feed: Feed, user: User) {
@@ -71,3 +64,14 @@ export function printFeed(feed: Feed, user: User) {
     console.log(`user_id: ${feed.user_id}`);
     console.log(`name: ${user.name}`);
 }
+
+export async function scrapeFeeds() {
+    const nextFeed = await getNextFeedToFetch();
+    await markFeedFetched(nextFeed.id);
+    console.log(`Fetching feed ${nextFeed.name}`);
+    const feed = await fetchFeedURL(nextFeed.url);
+    for (let i of feed.items) {
+        console.log(`* ${i.title}`);
+    }
+}
+

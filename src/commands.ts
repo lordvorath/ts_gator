@@ -2,7 +2,7 @@ import { url } from "inspector";
 import { readConfig, setUser } from "./config.js";
 import { createFeed, createFeedFollow, deleteFeedFollow, getFeedFollowsForUser, getFeeds } from "./lib/db/queries/feeds.js";
 import { createUser, deleteAllUsers, getUserById, getUserByName, getUsers } from "./lib/db/queries/users.js";
-import { printFeed } from "./rss.js";
+import { printFeed, scrapeFeeds } from "./rss.js";
 import { read } from "fs";
 import { ConsoleLogWriter } from "drizzle-orm";
 import { User } from "./lib/db/schema.js";
@@ -118,4 +118,40 @@ export async function handlerUnfollow(cmdName: string, user: User, ...args: stri
         throw new Error("wrong number of arguments. Usage: unfollow <url>");
     }
     await deleteFeedFollow(args[0], user.id);
+}
+
+function parseDuration(duration: string): number {
+    const regex = /^(?<n>\d+)(?<t>ms|s|m|h)$/;
+    const match = duration.match(regex);
+    if (!match || !match?.groups) {
+        throw new Error("bad duration format: <digits><ms|s|m|h>");
+    }
+    let mult: number;
+    switch (match.groups.t) {
+        case "ms": mult = 1; break;
+        case "s": mult = 1000; break;
+        case "m": mult = 1000 * 60; break;
+        case "h": mult = 1000 * 60 * 60; break;
+        default: throw new Error("unrecognized duration amount");
+    }
+    const n = parseInt(match.groups.n);
+    return n * mult;
+}
+export async function handlerAggregate(cmdName: string, ...args: string[]) {
+    if (args.length !== 1) {
+        throw new Error("wrong number of arguments. Usage: agg <time_between_reqs>");
+    }
+    const duration = parseDuration(args[0]);
+    console.log(`Collecting feeds every ${args[0]}: ${duration}ms`);
+    scrapeFeeds().catch((reason) => {console.log(reason)});
+    const intervalRef = setInterval(() => {
+        scrapeFeeds().catch((reason) => {console.log(reason)});
+    }, duration);
+    await new Promise<void>((resolve) => {
+        process.on("SIGINT", () => {
+            console.log("Shutting down feed aggregator...");
+            clearInterval(intervalRef);
+            resolve();
+        });
+    });
 }
