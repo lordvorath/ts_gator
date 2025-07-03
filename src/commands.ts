@@ -6,6 +6,7 @@ import { printFeed, scrapeFeeds } from "./rss.js";
 import { read } from "fs";
 import { ConsoleLogWriter } from "drizzle-orm";
 import { User } from "./lib/db/schema.js";
+import { getPostsForUser } from "./lib/db/queries/posts.js";
 
 export type CommandHandler = (cmdName: string, ...args: string[]) => Promise<void>;
 export type CommandsRegistry = Record<string, CommandHandler>;
@@ -154,4 +155,15 @@ export async function handlerAggregate(cmdName: string, ...args: string[]) {
             resolve();
         });
     });
+}
+
+export async function handlerBrwse(cmdName: string, user: User, ...args: string[]) {
+    const max = args[0] ? parseInt(args[0]) : 2;
+    console.log(`Your latest RSS posts`);
+    console.log(`=========================`);
+    const result = await getPostsForUser(user.id, max);
+    for (let p of result) {
+        console.log(`** ${p.title}`);
+        console.log(`Link: ${p.url}`);
+    }
 }
